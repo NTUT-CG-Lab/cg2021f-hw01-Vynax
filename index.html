@@ -1,389 +1,403 @@
 <!DOCTYPE html>
 <html lang="en">
 
-	<head>
-		<title>進階電腦圖學 HW01</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link type="text/css" rel="stylesheet" href="main.css">
-	</head>
-
-	<body>
-		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - TTFLoader using opentype by gero3
-			<br />type to enter new text, drag to spin the text
-		</div>
-
-		<script src="./opentype.min.js"></script>
-		<script src="./three.min.js"></script>
-		<script src="./TTFLoader.js"></script>
-		<script src="scoreoutputer.min.js"></script>
-
-		<script>
-			// 建構子 ScoreOutputer 接受一個字串，該字串為 csv 的檔案名稱
-			// 以下面範例，檔名就為 "109598105(總分: 6).csv"
-			let so = new ScoreOutputer("109598085");
-			so.installCSS(function () {
-				// 安裝 bootstrap 的 css，如果在 html 上方引用 bootstrap 5.1.1 的話就不用使用 installCSS ，注意一定要 bootstrap css 5.1.1 版
-				// installCSS 接收一個 callback 當作參數，作為成功安裝 bootstrap css 的回呼函式
-
-				//加入項目，分數，完成狀況
-				//第一個參數為 項目名稱
-				//第2個參數為 項目分數
-				//第3個參數為 完成狀況，有完成 true/未完成 false
-				//有幾個項目就呼叫幾個 addChild
-				//addChild 要比 renderModal 先呼叫
-				so.addChild("建立場景", 2, true);
-				so.addChild("讀取字型檔", 2, true);
-				so.addChild("將地支以圓圈排列", 2, true);
-				so.addChild("滑鼠點擊12地支分別跳轉網頁", 1, false);
-				so.addChild("顯示 \"高等計算機圖學作業\"", 1, false);
-				so.addChild("時鐘效果", 1, false);
-				so.addChild("任何 ply 格式模型", 1, false);
-
-				//產生自評表，參數如下所示
-				so.renderModal(
-					//1. 自評表插入位置 (預設 document.body)
-					document.body,
-					//2. 自評表背景 (預設紅色)
-					'rgba(100,45,58,1)',
-					//3. 自評表文字顏色 (預設白色)
-					'white',
-					//4. 自評表文字大小 (預設 14pt)
-					'15pt',
-					//5. 自評表 checkbox 文字大小 (預設多少忘了)
-					'15px',
-					//6. 自評表標題 (預設 "自我評分表")
-					dialogTitle = '自我評分表 (助教測試用)'
-				);
-
-				//設定下載按鈕 <-- 一定要呼叫這個函數，不然沒有下載功能
-				so.installDownloadBtn();
-
-				//產生 "開啟自評表按鈕"
-				so.renderBtn(
-					//自評表按鈕插入位置
-					document.body,
-					//自評表按鈕文字
-					"開啟自評表"
-				);
-			});
-
-			let container;
-			let camera, cameraTarget, scene, renderer;
-			let group, textMesh1, textMesh2, textGeo, material;
-			let firstLetter = true;
-
-			let earth_branch = [];
-			let earth_branch_Mesh = [];
-			let circle, circle_Geometry, material_Circle;
-			let radius = 80;
-			let hours = 12;
-
-			let text_earth_branch = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
-
-			let text = '高等計算機圖學';
-			const height = 10,
-				size = 20,
-				hover = 30,
-				curveSegments = 4,
-				bevelThickness = 0.5,
-				bevelSize = 1.5;
-
-			let font = null;
-			const mirror = true;
-
-			let targetRotation = 0;
-			let targetRotationOnPointerDown = 0;
+<head>
+    <title>進階電腦圖學 HW01</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+
+    <!-- <style>
+        .container {
+            position: absolute !important;
+            top: 0 !important;
+        }
+    </style> -->
+</head>
+
+<body>
+    <!-- <div> -->
+    <!-- <div style='position:absolute; top:0;'> -->
+    <div id="info" style='position:absolute; top:0;'></div>
+    <script src="scoreoutputer.min.js"></script>
+    <script>// 建構子 ScoreOutputer 接受一個字串，該字串為 csv 的檔案名稱
+        // 以下面範例，檔名就為 "109598105(總分: 6).csv"
+        let so = new ScoreOutputer("109598085");
+        so.installCSS(function () {
+            // 安裝 bootstrap 的 css，如果在 html 上方引用 bootstrap 5.1.1 的話就不用使用 installCSS ，注意一定要 bootstrap css 5.1.1 版
+            // installCSS 接收一個 callback 當作參數，作為成功安裝 bootstrap css 的回呼函式
+
+            //加入項目，分數，完成狀況
+            //第一個參數為 項目名稱
+            //第2個參數為 項目分數
+            //第3個參數為 完成狀況，有完成 true/未完成 false
+            //有幾個項目就呼叫幾個 addChild
+            //addChild 要比 renderModal 先呼叫
+            so.addChild("建立場景", 2, true);
+            so.addChild("讀取字型檔", 2, true);
+            so.addChild("將地支以圓圈排列", 2, true);
+            so.addChild("滑鼠點擊12地支分別跳轉網頁", 1, false);
+            so.addChild("顯示 \"高等計算機圖學作業\"", 1, false);
+            so.addChild("時鐘效果", 1, false);
+            so.addChild("任何 ply 格式模型", 1, false);
+
+            //產生自評表，參數如下所示
+            so.renderModal(
+                //1. 自評表插入位置 (預設 document.body)
+                document.body,
+                //2. 自評表背景 (預設紅色)
+                'rgba(100,45,58,1)',
+                //3. 自評表文字顏色 (預設白色)
+                'white',
+                //4. 自評表文字大小 (預設 14pt)
+                '15pt',
+                //5. 自評表 checkbox 文字大小 (預設多少忘了)
+                '15px',
+                //6. 自評表標題 (預設 "自我評分表")
+                dialogTitle = '自我評分表 (助教測試用)'
+            );
+
+            //設定下載按鈕 <-- 一定要呼叫這個函數，不然沒有下載功能
+            so.installDownloadBtn();
+
+            //產生 "開啟自評表按鈕"
+            so.renderBtn(
+                //自評表按鈕插入位置
+                // document.body,
+                document.querySelector("#info"),
+                //自評表按鈕文字
+                "開啟自評表"
+            );
+        });</script>
+    <!-- </div> -->
+    <!-- 
+    <div id="info">
+        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - TTFLoader using opentype by gero3
+        <br />type to enter new text, drag to spin the text
+    </div> -->
+
+    <script src="./opentype.min.js"></script>
+    <script src="./three.min.js"></script>
+    <script src="./TTFLoader.js"></script>
+
+    <script>
+
+
+        let container;
+        let camera, cameraTarget, scene, renderer;
+        let group, textMesh1, textMesh2, textGeo, material;
+        let firstLetter = true;
+
+        let earth_branch = [];
+        let earth_branch_Mesh = [];
+        let circle, circle_Geometry, material_Circle;
+        let radius = 80;
+        let hours = 12;
+
+        let text_earth_branch = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
+
+        let text = '高等計算機圖學';
+        const height = 10,
+            size = 20,
+            hover = 30,
+            curveSegments = 4,
+            bevelThickness = 0.5,
+            bevelSize = 1.5;
 
-			let pointerX = 0;
-			let pointerXOnPointerDown = 0;
+        let font = null;
+        const mirror = true;
 
-			let windowHalfX = window.innerWidth / 2;
+        let targetRotation = 0;
+        let targetRotationOnPointerDown = 0;
 
-			init();
-			animate();
+        let pointerX = 0;
+        let pointerXOnPointerDown = 0;
 
-			function init() {
+        let windowHalfX = window.innerWidth / 2;
 
-				container = document.createElement('div');
-				document.body.appendChild(container);
+        init();
+        animate();
 
-				// CAMERA
+        function init() {
 
-				camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1500);
-				camera.position.set(0, 400, 700);
+            container = document.createElement('div');
+            document.body.appendChild(container);
 
-				cameraTarget = new THREE.Vector3(0, 150, 0);
+            // CAMERA
 
-				// SCENE
+            camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1500);
+            camera.position.set(0, 400, 700);
 
-				scene = new THREE.Scene();
-				scene.background = new THREE.Color(0x000000);
-				scene.fog = new THREE.Fog(0x000000, 250, 1400);
+            cameraTarget = new THREE.Vector3(0, 150, 0);
 
-				// LIGHTS
+            // SCENE
 
-				const dirLight = new THREE.DirectionalLight(0xffffff, 0.125);
-				dirLight.position.set(0, 0, 1).normalize();
-				scene.add(dirLight);
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            scene.fog = new THREE.Fog(0x000000, 250, 1400);
 
-				const pointLight = new THREE.PointLight(0xffffff, 1.5);
-				pointLight.position.set(0, 100, 90);
-				// pointLight.color.setHSL(Math.random(), 1, 0.5);
-				scene.add(pointLight);
+            // LIGHTS
 
-				material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true });
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.125);
+            dirLight.position.set(0, 0, 1).normalize();
+            scene.add(dirLight);
 
-				group = new THREE.Group();
-				group.position.y = 100;
+            const pointLight = new THREE.PointLight(0xffffff, 1.5);
+            pointLight.position.set(0, 100, 90);
+            // pointLight.color.setHSL(Math.random(), 1, 0.5);
+            scene.add(pointLight);
 
-				scene.add(group);
+            material = new THREE.MeshPhongMaterial({ color: 0xffffff, flatShading: true });
 
-				// circle
-				material_Circle = new THREE.MeshBasicMaterial({ color: 0xb0c4de });
-				circle_Geometry = new THREE.CircleGeometry(100, 32);
-				circle = new THREE.Mesh(circle_Geometry, material_Circle);
-				group.add(circle);
+            group = new THREE.Group();
+            group.position.y = 100;
 
-				const loader = new THREE.TTFLoader();
+            scene.add(group);
 
-				loader.load('fonts/genjyuugothic-20150607/GenJyuuGothic-Light.ttf', function (json) {
-					console.log(json)
-					font = new THREE.Font(json);
-					createText();
+            // circle
+            material_Circle = new THREE.MeshBasicMaterial({ color: 0xb0c4de });
+            circle_Geometry = new THREE.CircleGeometry(100, 32);
+            circle = new THREE.Mesh(circle_Geometry, material_Circle);
+            group.add(circle);
 
-				});
+            const loader = new THREE.TTFLoader();
 
+            loader.load('fonts/genjyuugothic-20150607/GenJyuuGothic-Light.ttf', function (json) {
+                console.log(json)
+                font = new THREE.Font(json);
+                createText();
 
+            });
 
-				const plane = new THREE.Mesh(
-					new THREE.PlaneGeometry(10000, 10000),
-					new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
-				);
-				plane.position.y = 100;
-				plane.rotation.x = - Math.PI / 2;
-				scene.add(plane);
 
-				// RENDERER
 
-				renderer = new THREE.WebGLRenderer({ antialias: true });
-				renderer.setPixelRatio(window.devicePixelRatio);
-				renderer.setSize(window.innerWidth, window.innerHeight);
-				container.appendChild(renderer.domElement);
+            const plane = new THREE.Mesh(
+                new THREE.PlaneGeometry(10000, 10000),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
+            );
+            plane.position.y = 100;
+            plane.rotation.x = - Math.PI / 2;
+            scene.add(plane);
 
-				// EVENTS
+            // RENDERER
 
-				container.style.touchAction = 'none';
-				container.addEventListener('pointerdown', onPointerDown);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
 
-				document.addEventListener('keypress', onDocumentKeyPress);
-				document.addEventListener('keydown', onDocumentKeyDown);
+            // EVENTS
 
-				window.addEventListener('resize', onWindowResize);
+            container.style.touchAction = 'none';
+            container.addEventListener('pointerdown', onPointerDown);
 
-			}
+            document.addEventListener('keypress', onDocumentKeyPress);
+            document.addEventListener('keydown', onDocumentKeyDown);
 
-			function onWindowResize() {
+            window.addEventListener('resize', onWindowResize);
 
-				windowHalfX = window.innerWidth / 2;
+        }
 
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
+        function onWindowResize() {
 
-				renderer.setSize(window.innerWidth, window.innerHeight);
+            windowHalfX = window.innerWidth / 2;
 
-			}
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
 
-			function onDocumentKeyDown(event) {
+            renderer.setSize(window.innerWidth, window.innerHeight);
 
-				if (firstLetter) {
+        }
 
-					firstLetter = false;
-					text = '';
+        function onDocumentKeyDown(event) {
 
-				}
+            if (firstLetter) {
 
-				const keyCode = event.keyCode;
+                firstLetter = false;
+                text = '';
 
-				// backspace
+            }
 
-				if (keyCode === 8) {
+            const keyCode = event.keyCode;
 
-					event.preventDefault();
+            // backspace
 
-					text = text.substring(0, text.length - 1);
-					refreshText();
+            if (keyCode === 8) {
 
-					return false;
+                event.preventDefault();
 
-				}
+                text = text.substring(0, text.length - 1);
+                refreshText();
 
-			}
+                return false;
 
-			function onDocumentKeyPress(event) {
+            }
 
-				const keyCode = event.which;
+        }
 
-				// backspace
+        function onDocumentKeyPress(event) {
 
-				if (keyCode === 8) {
+            const keyCode = event.which;
 
-					event.preventDefault();
+            // backspace
 
-				} else {
+            if (keyCode === 8) {
 
-					const ch = String.fromCharCode(keyCode);
-					text += ch;
+                event.preventDefault();
 
-					refreshText();
+            } else {
 
-				}
+                const ch = String.fromCharCode(keyCode);
+                text += ch;
 
-			}
+                refreshText();
 
-			function createText() {
+            }
 
-				/* textGeo = new THREE.TextGeometry(text, {
+        }
 
-					font: font,
+        function createText() {
 
-					size: size,
-					height: height,
-					curveSegments: curveSegments,
+            /* textGeo = new THREE.TextGeometry(text, {
 
-					bevelThickness: bevelThickness,
-					bevelSize: bevelSize,
-					bevelEnabled: true
+                font: font,
 
-				});
+                size: size,
+                height: height,
+                curveSegments: curveSegments,
 
-				textGeo.computeBoundingBox();
-				textGeo.computeVertexNormals();
+                bevelThickness: bevelThickness,
+                bevelSize: bevelSize,
+                bevelEnabled: true
 
-				let centerOffset = - 0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
+            });
 
-				textMesh1 = new THREE.Mesh(textGeo, material);
+            textGeo.computeBoundingBox();
+            textGeo.computeVertexNormals();
 
-				textMesh1.position.x = centerOffset;
-				textMesh1.position.y = hover;
-				textMesh1.position.z = 0;
+            let centerOffset = - 0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
 
-				textMesh1.rotation.x = 0;
-				textMesh1.rotation.y = Math.PI * 2;
+            textMesh1 = new THREE.Mesh(textGeo, material);
 
-				group.add(textMesh1); */
+            textMesh1.position.x = centerOffset;
+            textMesh1.position.y = hover;
+            textMesh1.position.z = 0;
 
-				// if (mirror) {
+            textMesh1.rotation.x = 0;
+            textMesh1.rotation.y = Math.PI * 2;
 
-				// 	textMesh2 = new THREE.Mesh(textGeo, material);
+            group.add(textMesh1); */
 
-				// 	textMesh2.position.x = centerOffset;
-				// 	textMesh2.position.y = - hover;
-				// 	textMesh2.position.z = height;
+            // if (mirror) {
 
-				// 	textMesh2.rotation.x = Math.PI;
-				// 	textMesh2.rotation.y = Math.PI * 2;
+            // 	textMesh2 = new THREE.Mesh(textGeo, material);
 
-				// 	group.add(textMesh2);
+            // 	textMesh2.position.x = centerOffset;
+            // 	textMesh2.position.y = - hover;
+            // 	textMesh2.position.z = height;
 
-				// }
+            // 	textMesh2.rotation.x = Math.PI;
+            // 	textMesh2.rotation.y = Math.PI * 2;
 
-				for (let i = 0; i < hours; i++) {
-					earth_branch.push(new THREE.TextGeometry(text_earth_branch[i], {
+            // 	group.add(textMesh2);
 
-						font: font,
+            // }
 
-						size: size,
-						height: height,
-						curveSegments: curveSegments,
+            for (let i = 0; i < hours; i++) {
+                earth_branch.push(new THREE.TextGeometry(text_earth_branch[i], {
 
-						bevelThickness: bevelThickness,
-						bevelSize: bevelSize,
-						bevelEnabled: true
+                    font: font,
 
-					}));
+                    size: size,
+                    height: height,
+                    curveSegments: curveSegments,
 
-					earth_branch[i].computeBoundingBox();
-					earth_branch[i].computeVertexNormals();
+                    bevelThickness: bevelThickness,
+                    bevelSize: bevelSize,
+                    bevelEnabled: true
 
-					const centerOffset = - 0.5 * (earth_branch[i].boundingBox.max.x - earth_branch[i].boundingBox.min.x);
+                }));
 
-					earth_branch_Mesh.push(new THREE.Mesh(earth_branch[i], material));
+                earth_branch[i].computeBoundingBox();
+                earth_branch[i].computeVertexNormals();
 
-					// let hour = (i + 1) % hours; // i 要加一
-					let angle = 360 * i / hours;
-					let radian = angle * Math.PI / 180;
-					let cos = Math.cos(radian);
-					let sin = Math.sin(radian);
-					// earth_branch_Mesh[i].position.set(centerOffset, hover, 0);
-					earth_branch_Mesh[i].position.set(radius * sin + centerOffset, radius * cos + centerOffset, 0);
+                const centerOffset = - 0.5 * (earth_branch[i].boundingBox.max.x - earth_branch[i].boundingBox.min.x);
 
-					earth_branch_Mesh[i].rotation.x = 0;
-					earth_branch_Mesh[i].rotation.y = Math.PI * 2;
+                earth_branch_Mesh.push(new THREE.Mesh(earth_branch[i], material));
 
-					group.add(earth_branch_Mesh[i]);
-				}
+                // let hour = (i + 1) % hours; // i 要加一
+                let angle = 360 * i / hours;
+                let radian = angle * Math.PI / 180;
+                let cos = Math.cos(radian);
+                let sin = Math.sin(radian);
+                // earth_branch_Mesh[i].position.set(centerOffset, hover, 0);
+                earth_branch_Mesh[i].position.set(radius * sin + centerOffset, radius * cos + centerOffset, 0);
 
-			}
+                earth_branch_Mesh[i].rotation.x = 0;
+                earth_branch_Mesh[i].rotation.y = Math.PI * 2;
 
-			function refreshText() {
+                group.add(earth_branch_Mesh[i]);
+            }
 
-				// group.remove(textMesh1);
-				// if (mirror) group.remove(textMesh2);
+        }
 
-				// if (!text) return;
+        function refreshText() {
 
-				// createText();
+            // group.remove(textMesh1);
+            // if (mirror) group.remove(textMesh2);
 
-			}
+            // if (!text) return;
 
-			function onPointerDown(event) {
+            // createText();
 
-				if (event.isPrimary === false) return;
+        }
 
-				pointerXOnPointerDown = event.clientX - windowHalfX;
-				targetRotationOnPointerDown = targetRotation;
+        function onPointerDown(event) {
 
-				document.addEventListener('pointermove', onPointerMove);
-				document.addEventListener('pointerup', onPointerUp);
+            if (event.isPrimary === false) return;
 
-			}
+            pointerXOnPointerDown = event.clientX - windowHalfX;
+            targetRotationOnPointerDown = targetRotation;
 
-			function onPointerMove(event) {
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
 
-				if (event.isPrimary === false) return;
+        }
 
-				pointerX = event.clientX - windowHalfX;
+        function onPointerMove(event) {
 
-				targetRotation = targetRotationOnPointerDown + (pointerX - pointerXOnPointerDown) * 0.02;
+            if (event.isPrimary === false) return;
 
-			}
+            pointerX = event.clientX - windowHalfX;
 
-			function onPointerUp() {
+            targetRotation = targetRotationOnPointerDown + (pointerX - pointerXOnPointerDown) * 0.02;
 
-				if (event.isPrimary === false) return;
+        }
 
-				document.removeEventListener('pointermove', onPointerMove);
-				document.removeEventListener('pointerup', onPointerUp);
+        function onPointerUp() {
 
-			}
+            if (event.isPrimary === false) return;
 
-			//
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
 
-			function animate() {
+        }
 
-				requestAnimationFrame(animate);
+        //
 
-				group.rotation.y += (targetRotation - group.rotation.y) * 0.05;
+        function animate() {
 
-				camera.lookAt(cameraTarget);
+            requestAnimationFrame(animate);
 
-				renderer.render(scene, camera);
+            group.rotation.y += (targetRotation - group.rotation.y) * 0.05;
 
-			}
-		</script>
+            camera.lookAt(cameraTarget);
 
-	</body>
+            renderer.render(scene, camera);
+
+        }
+    </script>
+
+</body>
 
 </html>
