@@ -203,7 +203,26 @@
 
 				window.addEventListener('resize', onWindowResize);
 
-				// document.addEventListener('mousemove', onMouseMove, false);
+				document.addEventListener('click', onDocumentClick);
+
+			}
+
+			function onDocumentClick(event) {
+				// calculate mouse position in normalized device coordinates
+				// (-1 to +1) for both components
+
+				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+				mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+				raycaster.setFromCamera(mouse, camera);
+
+				let intersects = raycaster.intersectObjects(earth_branch_Mesh);
+
+				if (intersects.length > 0) {
+
+					intersects[0].object.callback();
+
+				}
 
 			}
 
@@ -327,25 +346,6 @@
 
 				document.addEventListener('pointermove', onPointerMove);
 				document.addEventListener('pointerup', onPointerUp);
-
-				// calculate mouse position in normalized device coordinates
-				// (-1 to +1) for both components
-
-				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-				mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-
-				raycaster.setFromCamera(mouse, camera);
-
-				let intersects = raycaster.intersectObjects(earth_branch_Mesh);
-
-				if (intersects.length > 0) {
-
-					intersects[0].object.callback();
-
-				}
-
-				mouse.x = 0;
-				mouse.y = 0;
 			}
 
 			function onPointerMove(event) {
