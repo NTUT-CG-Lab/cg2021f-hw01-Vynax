@@ -18,7 +18,7 @@
 	<body>
 		<!-- <div> -->
 		<!-- <div style='position:absolute; top:0;'> -->
-		<div id="info" style='position:absolute; top:0;'></div>
+		<div id="info"></div>
 		<script src="scoreoutputer.min.js"></script>
 		<script>// 建構子 ScoreOutputer 接受一個字串，該字串為 csv 的檔案名稱
 			// 以下面範例，檔名就為 "109598105(總分: 6).csv"
@@ -36,7 +36,7 @@
 				so.addChild("建立場景", 2, true);
 				so.addChild("讀取字型檔", 2, true);
 				so.addChild("將地支以圓圈排列", 2, true);
-				so.addChild("滑鼠點擊12地支分別跳轉網頁", 1, false);
+				so.addChild("滑鼠點擊12地支分別跳轉網頁", 1, true);
 				so.addChild("顯示 \"高等計算機圖學作業\"", 1, false);
 				so.addChild("時鐘效果", 1, false);
 				so.addChild("任何 ply 格式模型", 1, false);
@@ -69,20 +69,12 @@
 					"開啟自評表"
 				);
 			});</script>
-		<!-- </div> -->
-		<!-- 
-    <div id="info">
-        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - TTFLoader using opentype by gero3
-        <br />type to enter new text, drag to spin the text
-    </div> -->
 
 		<script src="./opentype.min.js"></script>
 		<script src="./three.min.js"></script>
 		<script src="./TTFLoader.js"></script>
 
 		<script>
-
-
 			let container;
 			let camera, cameraTarget, scene, renderer;
 			let group, textMesh1, textMesh2, textGeo, material;
@@ -93,15 +85,20 @@
 			let circle, circle_Geometry, material_Circle;
 			let radius = 80;
 			let hours = 12;
+			let first_half = "https://ntut-cg-lab.github.io/cg2021f-hw"
+			let last_half = "-Vynax/"
+			let url = []
+			let raycaster = new THREE.Raycaster();
+			let mouse = new THREE.Vector2();
 
 			let text_earth_branch = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 
 			let text = '高等計算機圖學';
-			const height = 10,
-				size = 20,
-				hover = 30,
+			const height = 5,
+				size = 15,
+				hover = 20,
 				curveSegments = 4,
-				bevelThickness = 0.5,
+				bevelThickness = 2,
 				bevelSize = 1.5;
 
 			let font = null;
@@ -160,6 +157,7 @@
 				circle = new THREE.Mesh(circle_Geometry, material_Circle);
 				group.add(circle);
 
+				//地支
 				const loader = new THREE.TTFLoader();
 
 				loader.load('fonts/genjyuugothic-20150607/GenJyuuGothic-Light.ttf', function (json) {
@@ -169,6 +167,15 @@
 
 				});
 
+				//網址
+				for (let i = 0; i < text_earth_branch.length; i++) {
+					url[i] = first_half;
+					if (i < 9)
+						url[i] += "0";
+					url[i] += (i + 1).toString();
+					url[i] += last_half;
+					console.log(url[i]);
+				}
 
 
 				const plane = new THREE.Mesh(
@@ -195,6 +202,8 @@
 				document.addEventListener('keydown', onDocumentKeyDown);
 
 				window.addEventListener('resize', onWindowResize);
+
+				// document.addEventListener('mousemove', onMouseMove, false);
 
 			}
 
@@ -257,52 +266,6 @@
 			}
 
 			function createText() {
-
-				/* textGeo = new THREE.TextGeometry(text, {
-	
-					font: font,
-	
-					size: size,
-					height: height,
-					curveSegments: curveSegments,
-	
-					bevelThickness: bevelThickness,
-					bevelSize: bevelSize,
-					bevelEnabled: true
-	
-				});
-	
-				textGeo.computeBoundingBox();
-				textGeo.computeVertexNormals();
-	
-				let centerOffset = - 0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
-	
-				textMesh1 = new THREE.Mesh(textGeo, material);
-	
-				textMesh1.position.x = centerOffset;
-				textMesh1.position.y = hover;
-				textMesh1.position.z = 0;
-	
-				textMesh1.rotation.x = 0;
-				textMesh1.rotation.y = Math.PI * 2;
-	
-				group.add(textMesh1); */
-
-				// if (mirror) {
-
-				// 	textMesh2 = new THREE.Mesh(textGeo, material);
-
-				// 	textMesh2.position.x = centerOffset;
-				// 	textMesh2.position.y = - hover;
-				// 	textMesh2.position.z = height;
-
-				// 	textMesh2.rotation.x = Math.PI;
-				// 	textMesh2.rotation.y = Math.PI * 2;
-
-				// 	group.add(textMesh2);
-
-				// }
-
 				for (let i = 0; i < hours; i++) {
 					earth_branch.push(new THREE.TextGeometry(text_earth_branch[i], {
 
@@ -336,6 +299,9 @@
 					earth_branch_Mesh[i].rotation.x = 0;
 					earth_branch_Mesh[i].rotation.y = Math.PI * 2;
 
+					//url
+					earth_branch_Mesh[i].callback = function () { window.open(url[i]); };
+
 					group.add(earth_branch_Mesh[i]);
 				}
 
@@ -362,6 +328,24 @@
 				document.addEventListener('pointermove', onPointerMove);
 				document.addEventListener('pointerup', onPointerUp);
 
+				// calculate mouse position in normalized device coordinates
+				// (-1 to +1) for both components
+
+				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+				mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+				raycaster.setFromCamera(mouse, camera);
+
+				let intersects = raycaster.intersectObjects(earth_branch_Mesh);
+
+				if (intersects.length > 0) {
+
+					intersects[0].object.callback();
+
+				}
+
+				mouse.x = 0;
+				mouse.y = 0;
 			}
 
 			function onPointerMove(event) {
